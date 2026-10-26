@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+profile.json
+reel.json
+twin-selftest/
+twin-reel-selftest/
+comp/
+snapshots/
+node_modules/
