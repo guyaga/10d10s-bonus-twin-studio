@@ -45,8 +45,9 @@ clip = out / "selftest_studio_16x9.mp4"
 still = out / "selftest_side_9x16.png"
 for cmd in (py + ["--out", str(clip), "--frame", "studio", "--aspect", "16:9"],
             py + ["--out", str(still), "--frame", "side", "--aspect", "9:16", "--title", "Self-test", "--still", "2"]):
-    if subprocess.run(cmd).returncode:
-        fail("frame.py failed on the stand-in clip (see the message above)")
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")   # quiet: no ffmpeg progress
+    if r.returncode:
+        fail(f"frame.py failed on the stand-in clip:\n{(r.stderr or r.stdout)[-800:]}")
 for f in (clip, still):
     ok = f.exists() and f.stat().st_size > 1000
     print(f"  [{'OK' if ok else '!!'}] {f}")

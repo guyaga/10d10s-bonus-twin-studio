@@ -103,10 +103,9 @@ def check_heygen():
     d = get("HeyGen", "https://api.heygen.com/v3/users/me", {"x-api-key": hk}).get("data", {})
     bal = (d.get("wallet") or {}).get("remaining_balance")
     print(f"  [OK] HeyGen key works. API wallet: ${bal if bal is not None else '?'}")
-    if bal is not None and bal < 2:
-        print("  [!!] The HeyGen API wallet is almost empty: a 30-second clip costs about $4.\n"
-              "       fix: app.heygen.com > Settings > API > Add funds ($10-15 is plenty to start)")
-        return 1
+    if bal is not None and bal < 2:   # a warning, not a blocker: the free selftest still runs, make.py --dry-run shows the price
+        print("  [--] The HeyGen API wallet is almost empty: a 30-second clip costs about $4.\n"
+              "       before the first real clip: app.heygen.com > Settings > API > Add funds ($10-15 is plenty to start)")
     return 0
 
 
@@ -182,11 +181,18 @@ def set_fields(pairs):
         if "=" not in pair:
             fail(f"'{pair}' has no value", f"write it as {pair}=<value>")
         k, v = pair.split("=", 1)
+        if not k:
+            fail(f"'{pair}' has no field name", "write it as field=<value>, e.g. name=\"Dana Levi\"")
         if k.startswith("brand.") and not HEX.match(v):
             fail(f"{k}={v} is not a colour", "use a 6-digit hex colour, e.g. #E63B2E")
         if k in CHOICES and v not in CHOICES[k]:
             fail(f"{k}={v} is not an option", "one of: " + ", ".join(CHOICES[k]))
-        val = json.loads(v) if v[:1] in "[{" or v in ("true", "false") or __import__("re").fullmatch(r"-?\d+(\.\d+)?", v) else v
+        val = v
+        if v[:1] in ("[", "{") or v in ("true", "false") or __import__("re").fullmatch(r"-?\d+(\.\d+)?", v):
+            try:
+                val = json.loads(v)
+            except ValueError:   # not valid JSON: keep it as text
+                pass
         node, parts = p, k.split(".")
         for part in parts[:-1]:
             node = node.setdefault(part, {})
